@@ -3,7 +3,6 @@ import open3d as o3d
 import os
 
 from feature_distribution import get_feature_stats_over_labels
-from features.dist_from_centre import calculate_distance_from_centre
 from features.number_of_points import calculate_number_of_points
 
 FOLDERNAME = os.path.join(os.path.dirname(__file__), "../pointclouds-500")
@@ -30,5 +29,4 @@ def load_pts_with_labels(index_start, index_end):
 point_clouds_with_labels = load_pts_with_labels(0, 499)
 get_feature_stats_over_labels(point_clouds_with_labels, [
     (calculate_number_of_points, "Number of Points"),
-    (calculate_distance_from_centre, "Mean Distance from Center")
 ])
