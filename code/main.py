@@ -7,6 +7,7 @@ from features.number_of_points import calculate_number_of_points
 from features.convex_hull import compute_convex_hull_volume
 from features.bounding_volumes import get_axis_aligned_bbox
 from features.bounding_volumes import get_oriented_bbox
+from features.bounding_volumes import get_height_of_aa_bbox
 
 FOLDERNAME = os.path.join(os.path.dirname(__file__), "../pointclouds-500")
 
@@ -37,5 +38,6 @@ get_feature_stats_over_labels(point_clouds_with_labels, [
     (calculate_number_of_points, "Number of Points"),
     (compute_convex_hull_volume, "Volume of Convex Hull"),
     (get_axis_aligned_bbox, "Volume of axis aligned bbox"),
-    (get_oriented_bbox, "Volume of oriented bbox")
+    (get_oriented_bbox, "Volume of oriented bbox"),
+    (get_height_of_aa_bbox, "Extent in y-dimension (height) of axis aligned bbox")
 ])
