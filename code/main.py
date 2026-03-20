@@ -2,23 +2,33 @@ import numpy as np
 import open3d as o3d
 import os
 
-foldername = "pointclouds-500"
+from feature_distribution import get_feature_stats_over_labels
+from features.dist_from_centre import calculate_distance_from_centre
+from features.number_of_points import calculate_number_of_points
 
-# read the pointclouds from specified indices and put them in a list
-def load_pts(index_start, index_end, folder):
+FOLDERNAME = os.path.join(os.path.dirname(__file__), "../pointclouds-500")
+
+LABELS = {
+    100: "building",
+    200: "car",
+    300: "fence",
+    400: "pole",
+    500: "tree"
+}
+
+def load_pts_with_labels(index_start, index_end):
     pointcloud = []
     i = index_start
     while i <= index_end:
         filename = f"{i:03d}.xyz"
-        print(filename)
-        filepath = os.path.join(folder, filename)
-        print(filepath)
+        filepath = os.path.join(FOLDERNAME, filename)
         pcd = o3d.io.read_point_cloud(filepath)
-        print(pcd)
-        pointcloud.append(pcd)
+        pointcloud.append((pcd, LABELS.get(100 + i // 100 * 100, "unknown")))
         i += 1
     return pointcloud
 
-pointcloud = load_pts(0, 5, foldername)
-print(pointcloud)
-
+point_clouds_with_labels = load_pts_with_labels(0, 499)
+get_feature_stats_over_labels(point_clouds_with_labels, [
+    (calculate_number_of_points, "Number of Points"),
+    (calculate_distance_from_centre, "Mean Distance from Center")
+])
