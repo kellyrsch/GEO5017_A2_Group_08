@@ -14,3 +14,12 @@ def lps_features(points):
     scattering = l3 / (l1 + 1e-8)
 
     return linearity, planarity, scattering
+
+def get_linearity(points):
+    return lps_features(points)[0]
+
+def get_planarity(points):
+    return lps_features(points)[1]
+
+def get_scattering(points):
+    return lps_features(points)[2]
