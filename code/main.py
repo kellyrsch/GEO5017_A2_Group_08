@@ -32,12 +32,12 @@ features_to_use = select_features_based_on_J_score(train_samples, features, desi
 
 svm_params, rf_params = get_model_hyperparameters(features_to_use, train_samples, test_samples)
 
-create_learning_curves(features_to_use, svm_params, rf_params, num_random_samples=20)
+create_learning_curves(features_to_use, svm_params, rf_params, num_random_samples=10)
 
 final_test_size = 0.4
 x_train, y_train, x_test, y_test = get_data_for_sklearn(*get_data(test_size=final_test_size), features_to_use)
-final_rf_model = get_rf_model(x_train, y_train, n_estimators=rf_params['n_estimators'], max_depth=rf_params['max_depth'])
-final_svm_model = get_svm_model(x_train, y_train, kernel=svm_params['kernel'], C=svm_params['C'])
+final_rf_model = get_rf_model(x_train, y_train, n_estimators=rf_params['n_estimators'], max_depth=rf_params['max_depth'], min_samples_split=rf_params['min_samples_split'], min_samples_leaf=rf_params['min_samples_leaf'])
+final_svm_model = get_svm_model(x_train, y_train, kernel=svm_params['kernel'], C=svm_params['C'], gamma=svm_params['gamma'], degree=svm_params['degree'])
 
 def plot_confusion_matrix(model, title: str):
     predictions = model.predict(x_test)
