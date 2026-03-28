@@ -1,5 +1,4 @@
 from collections import defaultdict
-from itertools import groupby
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -134,63 +133,75 @@ def select_features_based_on_J_score(samples_with_labels: list[tuple[object, str
 
 
 def plot_feature_distribution(features_with_labels, list_of_feature_classifiers_with_names):
-    features_with_labels = sorted(features_with_labels, key=lambda x: x[1])
-    features_grouped_by_label = {
-        label: [feature for feature, _ in group]
-        for label, group in groupby(features_with_labels, lambda x: x[1])
-    }
-
-    feature_stats = {}
+    if not features_with_labels or not list_of_feature_classifiers_with_names:
+        return
 
     os.makedirs("plots", exist_ok=True)
 
-    for label, raw_features in features_grouped_by_label.items():
-        feature_statistics = {}
-        for feature_classifier, classifier_name in list_of_feature_classifiers_with_names:
-            feature_values = [feature_classifier(feature) for feature in raw_features]
-            mean = np.mean(feature_values)
-            variance = np.var(feature_values)
+    samples = [sample for sample, _ in features_with_labels]
+    labels = [label for _, label in features_with_labels]
+    unique_labels = sorted(set(labels))
 
-            feature_statistics[classifier_name] = {
-                "mean": mean,
-                "variance": variance,
-                "values": feature_values
-            }
+    classifier_names = [name for _, name in list_of_feature_classifiers_with_names]
+    normalised_values_by_classifier = {}
 
-        feature_stats[label] = feature_statistics
+    for feature_classifier, classifier_name in list_of_feature_classifiers_with_names:
+        raw_values = [feature_classifier(sample) for sample in samples]
+        normalised_values = z_score_standardisation(raw_values)
+        normalised_values_by_classifier[classifier_name] = normalised_values
 
-    labels = list(feature_stats.keys())
-    classifier_names = list(feature_stats[labels[0]].keys())
+    class_feature_means = {
+        label: [] for label in unique_labels
+    }
+    for label in unique_labels:
+        indices = [i for i, current_label in enumerate(labels) if current_label == label]
+        for classifier_name in classifier_names:
+            values = normalised_values_by_classifier[classifier_name]
+            label_values = [values[i] for i in indices]
+            class_feature_means[label].append(np.mean(label_values))
 
-    for classifier_name in classifier_names:
-        means = [feature_stats[label][classifier_name]["mean"] for label in labels]
+    split_index = (len(classifier_names) + 1) // 2
+    feature_groups = [
+        classifier_names[:split_index],
+        classifier_names[split_index:]
+    ]
 
-        # #collect raw values per label for J score
-        # feature_values_per_label = {
-        #     label: {
-        #         classifier_name: feature_stats[label][classifier_name]["values"]
-        #     }
-        #     for label in labels
-        # }
+    fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharey=True)
+    cmap = plt.get_cmap("tab20")
 
-        # J, SB, SW = evaluate_feature_set(feature_values_per_label)
-        # # convert J, SB, SW to scalars for easier comparison and plotting
-        # J = float(J[0, 0])
-        # SB = float(SB[0, 0])
-        # SW = float(SW)
+    for chart_index, feature_group in enumerate(feature_groups):
+        ax = axes[chart_index]
+        if not feature_group:
+            ax.set_visible(False)
+            continue
 
-        # feature_scores[classifier_name] = {
-        #     "J": J,
-        #     "SB": SB,
-        #     "SW": SW
-        # }
+        start_index = 0 if chart_index == 0 else split_index
+        end_index = start_index + len(feature_group)
 
-        plt.figure()
-        plt.bar(labels, means, label=classifier_name)
-        plt.title(f"Average Feature Values by Label\nJ = {J:.4f}")
-        plt.ylabel("Mean Value")
-        plt.legend()
+        x = np.arange(len(feature_group))
+        num_classes = len(unique_labels)
+        bar_width = 0.8 / max(num_classes, 1)
 
-        safe_name = classifier_name.replace(" ", "_").lower()
-        plt.savefig(f"plots/{safe_name}.png", dpi=300, bbox_inches="tight")
-        #plt.show()
+        for class_index, label in enumerate(unique_labels):
+            offsets = x - 0.4 + (class_index + 0.5) * bar_width
+            ax.bar(
+                offsets,
+                class_feature_means[label][start_index:end_index],
+                width=bar_width,
+                color=cmap(class_index % 20),
+                label=label
+            )
+
+        ax.axhline(0, color="gray", linestyle="--", linewidth=1)
+        ax.set_xticks(x, feature_group, rotation=45, ha="right")
+        ax.set_ylabel("Normalised Value (Z-score)")
+        ax.set_title(f"Normalised Feature Means by Class (Part {chart_index + 1})")
+
+    handles, legend_labels = axes[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, legend_labels, title="Class", ncol=min(len(unique_labels), 4), loc="upper center")
+
+    fig.supxlabel("Feature")
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.savefig("plots/normalised_feature_values_coloured.png", dpi=300, bbox_inches="tight")
+    plt.close()
